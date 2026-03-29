@@ -1,0 +1,471 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Data Detective | Neural Privacy Audit</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;700;900&display=swap');
+    </style>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s ease, color 0.3s ease; }
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* --- DARK MODE (GECE MODU) --- */
+        html.dark body { background-color: #000000 !important; color: #ffffff !important; }
+        html.dark .glass { background-color: #111111 !important; border: 2px solid #ffffff !important; color: #ffffff !important; }
+        html.dark #analyzeButton { background-color: #ffffff !important; color: #000000 !important; border: 2px solid #ffffff !important; }
+        html.dark textarea, html.dark select { background-color: #000000 !important; color: #ffffff !important; border: 1px solid #ffffff !important; }
+
+        /* --- LIGHT MODE (GÜNDÜZ MODU) --- */
+        html:not(.dark) body { background-color: #ffffff !important; color: #000000 !important; }
+        html:not(.dark) .glass { background-color: #f8f9fa !important; border: 2px solid #000000 !important; color: #000000 !important; }
+        html:not(.dark) #analyzeButton { background-color: #000000 !important; color: #ffffff !important; border: 2px solid #000000 !important; }
+        html:not(.dark) textarea, html:not(.dark) select { background-color: #ffffff !important; color: #000000 !important; border: 1px solid #000000 !important; }
+
+        /* --- GENEL TASARIM --- */
+        .glass { backdrop-filter: blur(10px); border-radius: 24px; padding: 2rem; margin-bottom: 2rem; }
+        #analyzeButton { display: flex !important; align-items: center !important; justify-content: center !important; font-weight: 900 !important; transition: transform 0.2s ease; cursor: pointer; }
+        #analyzeButton:hover { transform: scale(1.02); }
+
+        @keyframes pulse-blue {
+            0% { transform: scale(1); text-shadow: 0 0 5px rgba(96,165,250,0.2); }
+            50% { transform: scale(1.05); color: #60a5fa !important; }
+            100% { transform: scale(1); }
+        }
+        .analyzing-mode { animation: pulse-blue 1.5s infinite ease-in-out; }
+
+        /* --- KESİN PDF YAZDIRMA (PRINT) ÇÖZÜMÜ --- */
+        @media print {
+            @page { margin: 1cm; }
+            
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+
+            html, body, main, html.dark, html.dark body, html.dark main { 
+                background-color: #ffffff !important; 
+                display: block !important; 
+                width: 100% !important;
+                margin: 0 !important;
+            }
+
+            *, html.dark *, html.dark p, html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark span, html.dark div {
+                color: #000000 !important;
+                text-shadow: none !important;
+                box-shadow: none !important;
+            }
+
+            /* PDF'te gizlenecek arayüz elemanları */
+            #inputSection, #analyzeForm, #downloadPdf, .fixed, #statusWrapper { 
+                display: none !important; 
+            }
+
+            header {
+                display: flex !important;
+                border-bottom: 3px solid #000000 !important;
+                padding-bottom: 15px !important;
+                margin-bottom: 25px !important;
+            }
+
+            .glass, html.dark .glass { 
+                background-color: #ffffff !important; 
+                border: 2px solid #000000 !important; 
+                color: #000000 !important;
+                padding: 1.5rem !important;
+                margin-bottom: 1.5rem !important;
+                border-radius: 8px !important; 
+                page-break-inside: avoid !important; 
+                backdrop-filter: none !important;
+                -webkit-backdrop-filter: none !important;
+            }
+
+            .border-l-red-600, html.dark .border-l-red-600 { border-left: 8px solid #dc2626 !important; }
+            .border-l-amber-500, html.dark .border-l-amber-500 { border-left: 8px solid #f59e0b !important; }
+            .border-l-emerald-500, html.dark .border-l-emerald-500 { border-left: 8px solid #10b981 !important; }
+            
+            #heatmapBar, html.dark #heatmapBar { background-color: #dc2626 !important; }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen p-4 md:p-10 flex flex-col items-center font-bold">
+    <main class="w-full max-w-2xl">
+        
+        <header class="p-6 mb-8 flex items-center gap-5">
+            <div class="relative w-14 h-14 bg-cyan-500/10 rounded-2xl border-2 border-cyan-500/30 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 9h3m-3 3h6m-6 3h3" />
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-3xl font-extrabold tracking-tighter">Data Detective</h1>
+                <p class="text-[10px] tracking-[0.2em] uppercase opacity-70">Neural Privacy Audit System</p>
+            </div>
+        </header>
+
+        <div class="glass" id="inputSection">
+            <form id="analyzeForm" class="space-y-6">
+                <textarea id="contractText" placeholder="Please paste the legal contract here for analysis..." style="caret-color: #06b6d4 !important; padding: 1.5rem !important; font-size: 1.125rem !important; line-height: 1.7 !important;" class="w-full min-h-[180px] outline-none resize-none font-medium rounded-2xl transition-all" required></textarea>
+                
+                <div>
+                    <label class="block mono text-[10px] uppercase mb-2 tracking-widest">Analysis Output Language</label>
+                    <select id="languageSelect" class="w-full p-4 rounded-2xl outline-none cursor-pointer text-[12px] font-bold mono">
+                        <option value="English" selected>🇺🇸 English (EN)</option>
+                        <option value="Turkish">🇹🇷 Türkçe (TR)</option>
+                        <option value="Spanish">🇪🇸 Español (ES)</option>
+                        <option value="French">🇫🇷 Français (FR)</option>
+                        <option value="German">🇩🇪 Deutsch (DE)</option>
+                        <option value="Italian">🇮🇹 Italiano (IT)</option>
+                        <option value="Russian">🇷🇺 Русский (RU)</option>
+                        <option value="Chinese">🇨🇳 中文 (ZH)</option>
+                        <option value="Japanese">🇯🇵 日本語 (JA)</option>
+                        <option value="Korean">🇰🇷 한국어 (KO)</option>
+                        <option value="Arabic">🇸🇦 العربية (AR)</option>
+                        <option value="Hindi">🇮🇳 हिन्दी (HI)</option>
+                    </select>
+                </div>
+
+                <button type="submit" id="analyzeButton" class="w-full py-5 rounded-2xl uppercase tracking-[0.2em] text-[12px] shadow-lg">
+                    <span id="buttonText" style="color: inherit !important;">RUN ANALYSIS</span>
+                    <div id="spinner" class="hidden w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin ml-3"></div>
+                </button>
+            </form>
+        </div>
+
+        <div id="statusWrapper" class="hidden mb-10">
+            <div class="flex justify-between items-end mb-2 mono text-[10px]">
+                <span id="statusLabel">SCANNING ENGINE ACTIVE...</span>
+                <span id="progressPercent">0%</span>
+            </div>
+            <div class="w-full h-[3px] bg-zinc-800 rounded-full overflow-hidden">
+                <div id="progressBar" class="h-full bg-cyan-500 transition-all duration-500 w-0"></div>
+            </div>
+        </div>
+
+        <div id="resultArea" class="hidden">
+            <div id="dashboardSlot"></div>
+            <div id="risksSlot" class="grid gap-4 mt-6"></div>
+            
+            <div class="flex justify-center mt-10 pb-10">
+                <button id="downloadPdf" class="glass px-8 py-4 rounded-xl text-[11px] mono cursor-pointer">
+                    📄 GENERATE LEGAL REPORT (PDF)
+                </button>
+            </div>
+        </div>
+
+        <div class="fixed top-6 right-6 z-50">
+            <button id="themeToggle" class="glass !p-3 rounded-2xl cursor-pointer !mb-0 shadow-lg" title="Toggle Theme">
+                <span id="themeIcon" class="text-xl">🌙</span>
+            </button>
+        </div>
+
+        <div class="fixed bottom-6 right-6 z-50">
+            <button id="reportError" class="glass !px-5 !py-3 rounded-2xl cursor-pointer !mb-0 flex items-center gap-2 text-[12px] mono font-bold hover:border-red-500/50 transition-colors shadow-lg group" title="Report an Issue">
+                <span class="text-lg group-hover:scale-110 transition-transform">⚠️</span>
+                <span>REPORT ERROR</span>
+            </button>
+        </div>
+    </main>
+
+    <script>
+        // --- 1. TEMA KONTROLÜ ---
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        const htmlElement = document.documentElement;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('app_theme') || 'dark';
+            if (savedTheme === 'dark') {
+                htmlElement.classList.add('dark');
+                if(themeIcon) themeIcon.innerText = "🌙";
+            } else {
+                htmlElement.classList.remove('dark');
+                if(themeIcon) themeIcon.innerText = "☀️";
+            }
+        });
+
+        if (themeToggle) {
+            themeToggle.addEventListener('click', () => {
+                htmlElement.classList.toggle('dark');
+                const isDark = htmlElement.classList.contains('dark');
+                localStorage.setItem('app_theme', isDark ? 'dark' : 'light');
+                if(themeIcon) themeIcon.innerText = isDark ? "🌙" : "☀️";
+            });
+        }
+
+        // --- 2. KÜRESEL SÖZLÜK ---
+        const i18n = {
+            "English": { tooShort: "The text is too short! Please paste a proper contract.", analyzing: "ANALYZING...", runAnalysis: "RUN ANALYSIS", scanning: "SCANNING ENGINE ACTIVE...", success: "ANALYSIS COMPLETED SUCCESSFULLY", failed: "ANALYSIS FAILED", sysError: "System Error: ", density: "High Risk Density", solution: "SOLUTION:", index: "SECURITY INDEX", pdfBtn: "📄 GENERATE LEGAL REPORT (PDF)" },
+            "Turkish": { tooShort: "Metin çok kısa! Lütfen geçerli bir sözleşme yapıştırın.", analyzing: "ANALİZ EDİLİYOR...", runAnalysis: "ANALİZİ BAŞLAT", scanning: "TARAMA MOTORU AKTİF...", success: "ANALİZ BAŞARIYLA TAMAMLANDI", failed: "ANALİZ BAŞARISIZ", sysError: "Sistem Hatası: ", density: "Yüksek Risk Yoğunluğu", solution: "ÇÖZÜM:", index: "GÜVENLİK ENDEKSİ", pdfBtn: "📄 YASAL RAPOR OLUŞTUR (PDF)" },
+            "Spanish": { tooShort: "¡El texto es demasiado corto!", analyzing: "ANALIZANDO...", runAnalysis: "INICIAR ANÁLISIS", scanning: "ESCANEO ACTIVO...", success: "ANÁLISIS COMPLETADO", failed: "ANÁLISIS FALLIDO", sysError: "Error: ", density: "Densidad de Alto Riesgo", solution: "SOLUCIÓN:", index: "ÍNDICE DE SEGURIDAD", pdfBtn: "📄 GENERAR INFORME (PDF)" },
+            "French": { tooShort: "Texte trop court !", analyzing: "ANALYSE...", runAnalysis: "LANCER L'ANALYSE", scanning: "ANALYSE EN COURS...", success: "ANALYSE TERMINÉE", failed: "ÉCHEC", sysError: "Erreur: ", density: "Densité de Risque", solution: "SOLUTION :", index: "INDICE DE SÉCURITÉ", pdfBtn: "📄 GÉNÉRER LE RAPPORT (PDF)" },
+            "German": { tooShort: "Text zu kurz!", analyzing: "ANALYSIERT...", runAnalysis: "ANALYSE STARTEN", scanning: "SCAN-ENGINE AKTIV...", success: "ERFOLGREICH", failed: "FEHLGESCHLAGEN", sysError: "Fehler: ", density: "Hohe Risikodichte", solution: "LÖSUNG:", index: "SICHERHEITSINDEX", pdfBtn: "📄 BERICHT ERSTELLEN (PDF)" },
+            "Italian": { tooShort: "Testo troppo corto!", analyzing: "ANALISI...", runAnalysis: "AVVIA ANALISI", scanning: "SCANSIONE...", success: "COMPLETATA", failed: "FALLITA", sysError: "Errore: ", density: "Densità Alto Rischio", solution: "SOLUZIONE:", index: "INDICE DI SICUREZZA", pdfBtn: "📄 GENERA REPORT (PDF)" },
+            "Russian": { tooShort: "Текст слишком короткий!", analyzing: "АНАЛИЗ...", runAnalysis: "НАЧАТЬ АНАЛИЗ", scanning: "СКАНИРОВАНИЕ...", success: "ЗАВЕРШЕН", failed: "ОШИБКА", sysError: "Ошибка: ", density: "Высокий риск", solution: "РЕШЕНИЕ:", index: "ИНДЕКС БЕЗОПАСНОСТИ", pdfBtn: "📄 СОЗДАТЬ ОТЧЕТ (PDF)" },
+            "Chinese": { tooShort: "文本太短！", analyzing: "分析中...", runAnalysis: "开始分析", scanning: "扫描中...", success: "分析成功", failed: "分析失败", sysError: "错误: ", density: "高风险密度", solution: "解决方案:", index: "安全指数", pdfBtn: "📄 生成报告 (PDF)" },
+            "Japanese": { tooShort: "テキストが短すぎます！", analyzing: "分析中...", runAnalysis: "分析を開始", scanning: "スキャン中...", success: "完了", failed: "失敗", sysError: "エラー: ", density: "高リスク密度", solution: "解決策:", index: "セキュリティ指数", pdfBtn: "📄 レポート生成 (PDF)" },
+            "Korean": { tooShort: "텍스트가 너무 짧습니다!", analyzing: "분석 중...", runAnalysis: "분석 시작", scanning: "스캔 중...", success: "분석 완료", failed: "분석 실패", sysError: "오류: ", density: "고위험 밀도", solution: "해결책:", index: "보안 지수", pdfBtn: "📄 보고서 생성 (PDF)" },
+            "Arabic": { tooShort: "النص قصير جداً!", analyzing: "تحليل...", runAnalysis: "بدء التحليل", scanning: "فحص...", success: "اكتمل", failed: "فشل", sysError: "خطأ: ", density: "كثافة المخاطر", solution: "الحل:", index: "مؤشر الأمان", pdfBtn: "📄 إنشاء تقرير (PDF)" },
+            "Hindi": { tooShort: "पाठ बहुत छोटा है!", analyzing: "विश्लेषण...", runAnalysis: "विश्लेषण शुरू करें", scanning: "स्कैनिंग...", success: "पूर्ण", failed: "विफल", sysError: "त्रुटि: ", density: "उच्च जोखिम", solution: "समाधान:", index: "सुरक्षा सूचकांक", pdfBtn: "📄 रिपोर्ट बनाएँ (PDF)" }
+        };
+
+        // --- 3. API VE ELEMENTLER ---
+        const apiKey = "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"; // <--- GROQ API KEY'İNİ YAPIŞTIR
+        const CONFIG = {
+            model: "llama-3.3-70b-versatile",
+            apiUrl: "https://api.groq.com/openai/v1/chat/completions"
+        };
+
+        const elements = {
+            form: document.getElementById('analyzeForm'), btn: document.getElementById('analyzeButton'),
+            buttonText: document.getElementById('buttonText'), spinner: document.getElementById('spinner'),
+            textarea: document.getElementById('contractText'), languageSelect: document.getElementById('languageSelect'),
+            statusWrapper: document.getElementById('statusWrapper'), statusLabel: document.getElementById('statusLabel'),
+            progressBar: document.getElementById('progressBar'), progressPercent: document.getElementById('progressPercent'),
+            resultArea: document.getElementById('resultArea'), dashboard: document.getElementById('dashboardSlot'),
+            risks: document.getElementById('risksSlot'), downloadPdf: document.getElementById('downloadPdf')
+        };
+
+        elements.languageSelect.addEventListener('change', () => {
+            const lang = elements.languageSelect.value;
+            const t = i18n[lang] || i18n["English"];
+            if (!elements.btn.disabled) elements.buttonText.textContent = t.runAnalysis;
+            if (elements.downloadPdf) elements.downloadPdf.textContent = t.pdfBtn;
+        });
+
+        function extractJson(raw) {
+            try {
+                // Eğer model fazladan boşluk bırakırsa diye temizleme yapıyoruz
+                const start = raw.indexOf("{");
+                const end = raw.lastIndexOf("}");
+                if(start === -1 || end === -1) return null;
+                return JSON.parse(raw.slice(start, end + 1));
+            } catch (e) { return null; }
+        }
+
+        // --- 4. MUTLAK HAFIZALI (CACHE) DETERMINİSTİK MOTOR ---
+        let lastAnalyzedText = "";
+        let baseAnalysisJson = null;
+
+        elements.form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const targetLang = elements.languageSelect.value;
+            const t = i18n[targetLang] || i18n["English"];
+            const text = elements.textarea.value.trim();
+            
+            if (text.length < 50) { alert(t.tooShort); return; }
+
+            elements.btn.disabled = true;
+            elements.buttonText.textContent = t.analyzing;
+            elements.spinner.classList.remove('hidden');
+            
+            elements.statusWrapper.classList.remove('hidden');
+            elements.resultArea.classList.remove('hidden');
+            elements.risks.innerHTML = "";
+            elements.statusLabel.textContent = t.scanning;
+            
+            elements.dashboard.innerHTML = `
+                <div class="glass p-8 text-center" style="margin-bottom:0;">
+                    <div class="mono text-[10px] uppercase mb-2 opacity-70">${t.index}</div>
+                    <div id="avgScore" class="text-6xl font-black italic analyzing-mode">...</div>
+                </div>`;
+            
+            elements.progressBar.style.width = "30%";
+            elements.progressPercent.textContent = "30%";
+
+            try {
+                const isSameContract = (text === lastAnalyzedText) && (baseAnalysisJson !== null);
+                
+                let promptStr = "";
+                let systemPrompt = "";
+
+                // MÜHENDİSLİK HAMLESİ 2: Prompt Kelepçesi (Anahtarlar ASLA çevrilemez)
+                if (isSameContract) {
+                    systemPrompt = `You are a strict JSON translator. You MUST output ONLY valid JSON format. CRITICAL: Keep all JSON keys ('risks', 'title', 'severityCode', 'levelText', 'desc', 'suggestion') EXACTLY in English. DO NOT translate the keys. NEVER change numerical values.`;
+                    promptStr = `Translate ONLY the text values (the strings inside title, levelText, desc, suggestion) of this JSON into ${targetLang}. 
+Remember: JSON keys must stay English. SeverityCode numbers must stay exactly the same.
+
+JSON to translate:
+${JSON.stringify(baseAnalysisJson)}`;
+                } else {
+                    systemPrompt = `You evaluate contracts. You MUST output ONLY valid JSON containing a 'risks' array with exactly 4 risk categories. CRITICAL: JSON keys ('risks', 'title', 'severityCode', 'levelText', 'desc', 'suggestion') MUST remain in English. Translate only the text values to ${targetLang}.`;
+                    promptStr = `Analyze this contract against 4 strict privacy categories:
+1. Unauthorized Data Sharing
+2. Data Retention Limits
+3. Breach Penalties
+4. Scope of Confidential Information
+
+Assign a severityCode (3=High, 2=Medium, 1=Low) for each of the 4 categories based on the contract text.
+Output MUST be strictly in this JSON format:
+{
+  "risks": [
+    {
+      "title": "Category Name in ${targetLang}",
+      "severityCode": 3,
+      "levelText": "Translate 'High', 'Medium', or 'Low' to ${targetLang}",
+      "desc": "Explanation in ${targetLang}",
+      "suggestion": "How to fix in ${targetLang}"
+    }
+  ]
+}
+Contract: ${text.substring(0, 8000)}`;
+                }
+
+                // MÜHENDİSLİK HAMLESİ 1: response_format: { type: "json_object" } KİLİDİ
+                const resp = await fetch(CONFIG.apiUrl, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+                    body: JSON.stringify({ 
+                        model: CONFIG.model, 
+                        messages: [
+                            { role: "system", content: systemPrompt },
+                            { role: "user", content: promptStr }
+                        ], 
+                        temperature: 0.0,
+                        top_p: 1.0,
+                        seed: 1453,
+                        response_format: { type: "json_object" } // YEPYENİ: Donanımsal JSON Garantisi
+                    })
+                });
+
+                const data = await resp.json();
+                if (data.error) throw new Error(data.error.message);
+                if (!data.choices) throw new Error("AI Error");
+
+                const content = extractJson(data.choices[0].message.content);
+
+                if (content && content.risks) {
+                    
+                    if (!isSameContract) {
+                        lastAnalyzedText = text;
+                        baseAnalysisJson = {
+                            risks: content.risks.map(r => ({
+                                title: r.title,
+                                severityCode: r.severityCode,
+                                levelText: r.levelText,
+                                desc: r.desc,
+                                suggestion: r.suggestion
+                            }))
+                        };
+                    }
+
+                    const scoreEl = document.getElementById('avgScore');
+                    if(scoreEl) scoreEl.classList.remove('analyzing-mode');
+
+                    const totalRisks = content.risks.length;
+                    const highRisksCount = content.risks.filter(r => r.severityCode === 3).length;
+                    
+                    const highPercent = totalRisks > 0 ? (highRisksCount / totalRisks) * 100 : 0;
+                    if(scoreEl) scoreEl.textContent = Math.round(highPercent) + "%";
+
+                    content.risks.forEach(r => {
+                        const isHigh = r.severityCode === 3;
+                        const isMedium = r.severityCode === 2;
+                        
+                        let borderClass = 'border-l-emerald-500';
+                        let badgeClass = 'border-emerald-500 text-emerald-500';
+                        
+                        if (isHigh) {
+                            borderClass = 'border-l-red-600';
+                            badgeClass = 'border-red-500 text-red-500';
+                        } else if (isMedium) {
+                            borderClass = 'border-l-amber-500';
+                            badgeClass = 'border-amber-500 text-amber-500';
+                        }
+
+                        const titleText = r.title || "Risk";
+                        const descText = r.desc || "Details not provided.";
+                        const sugText = r.suggestion || "Review contract.";
+                        const lvlText = r.levelText || (isHigh ? "High" : (isMedium ? "Medium" : "Low"));
+
+                        const cardHtml = `
+                            <div class="glass p-5 border-l-4 ${borderClass}">
+                                <div class="flex justify-between items-center mb-3">
+                                    <h4 class="font-bold text-[11px] uppercase tracking-widest">${titleText}</h4>
+                                    <span class="text-[9px] px-2 py-1 border rounded-full ${badgeClass}">${lvlText}</span>
+                                </div>
+                                <p class="text-[11px] opacity-80 leading-relaxed mb-4">${descText}</p>
+                                <div class="p-4 rounded-xl border border-current opacity-90" style="border: 1px solid currentColor;">
+                                    <span class="text-[9px] font-black uppercase tracking-widest block mb-1">${t.solution}</span>
+                                    <span class="text-[10px] italic">${sugText}</span>
+                                </div>
+                            </div>
+                        `;
+                        elements.risks.insertAdjacentHTML('beforeend', cardHtml);
+                    });
+
+                    const heatmapHtml = `
+                        <div class="glass p-5 border-2 border-current mt-4">
+                            <div class="flex justify-between text-[10px] mono mb-2 uppercase tracking-widest">
+                                <span>${t.density}</span>
+                                <span>${Math.round(highPercent)}%</span>
+                            </div>
+                            <div class="w-full h-2 bg-zinc-800 rounded-full overflow-hidden">
+                                <div id="heatmapBar" class="h-full bg-red-600 transition-all duration-1000" style="width: ${highPercent}%"></div>
+                            </div>
+                        </div>
+                    `;
+                    elements.dashboard.insertAdjacentHTML('beforeend', heatmapHtml);
+
+                    elements.progressBar.style.width = "100%";
+                    elements.progressPercent.textContent = "100%";
+                    elements.statusLabel.textContent = t.success;
+                    
+                    if (elements.downloadPdf) elements.downloadPdf.textContent = t.pdfBtn;
+
+                } else {
+                    throw new Error("Invalid JSON Output Structure");
+                }
+            } catch (err) {
+                console.error("System Error:", err);
+                const scoreEl = document.getElementById('avgScore');
+                if(scoreEl) { scoreEl.classList.remove('analyzing-mode'); scoreEl.textContent = "ERR"; }
+                elements.statusLabel.textContent = t.failed;
+                alert(t.sysError + err.message);
+
+            } finally {
+                elements.btn.disabled = false;
+                const finalLang = i18n[elements.languageSelect.value] || i18n["English"];
+                elements.buttonText.textContent = finalLang.runAnalysis;
+                elements.spinner.classList.add('hidden');
+            }
+        });
+
+        // --- 5. PDF YAZDIRMA KONTROLÜ ---
+        if (elements.downloadPdf) {
+            elements.downloadPdf.addEventListener('click', () => { window.print(); });
+        }
+
+        // --- 6. HATA RAPORLAMA KONTROLÜ (SAĞ ALT BUTON) ---
+        const reportBtn = document.getElementById('reportError');
+        if (reportBtn) {
+            reportBtn.addEventListener('click', () => {
+                const lang = elements.languageSelect ? elements.languageSelect.value : "Unknown";
+                const email = "nesibekizilay235@gmail.com"; 
+                const subject = encodeURIComponent(`Data Detective Bug Report - [${lang}]`);
+                const body = encodeURIComponent(
+                    "Hello Developer,\n\n" +
+                    "I encountered an issue while using Data Detective.\n\n" +
+                    "--- System Info ---\n" +
+                    "Language Selected: " + lang + "\n" +
+                    "Timestamp: " + new Date().toLocaleString() + "\n\n" +
+                    "--- Issue Description ---\n" +
+                    "[Please type what went wrong here...]\n"
+                );
+                window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+            });
+        }
+    </script>
+</body>
+</html>
