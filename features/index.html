@@ -220,11 +220,7 @@
         };
 
         // --- 3. API VE ELEMENTLER ---
-        const apiKey = "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"; // <--- GROQ API KEY'İNİ YAPIŞTIR
-        const CONFIG = {
-            model: "llama-3.3-70b-versatile",
-            apiUrl: "https://api.groq.com/openai/v1/chat/completions"
-        };
+      
 
         const elements = {
             form: document.getElementById('analyzeForm'), btn: document.getElementById('analyzeButton'),
@@ -322,20 +318,13 @@ Output MUST be strictly in this JSON format:
 Contract: ${text.substring(0, 8000)}`;
                 }
 
-                // MÜHENDİSLİK HAMLESİ 1: response_format: { type: "json_object" } KİLİDİ
-                const resp = await fetch(CONFIG.apiUrl, {
+              // MÜHENDİSLİK HAMLESİ: Artık Groq'a değil, kendi güvenli sunucumuza gidiyoruz!
+              const resp = await fetch("/.netlify/functions/analyze", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+                    headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ 
-                        model: CONFIG.model, 
-                        messages: [
-                            { role: "system", content: systemPrompt },
-                            { role: "user", content: promptStr }
-                        ], 
-                        temperature: 0.0,
-                        top_p: 1.0,
-                        seed: 1453,
-                        response_format: { type: "json_object" } // YEPYENİ: Donanımsal JSON Garantisi
+                        systemPrompt: systemPrompt, 
+                        promptStr: promptStr 
                     })
                 });
 
