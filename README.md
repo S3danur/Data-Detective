@@ -29,12 +29,14 @@ Yukarıdaki **"Yayın Linki"**ne tıklayarak uygulamayı tarayıcınız üzerind
 ### 2. Geliştiriciler İçin (Kodları İncelemek İsteyenler)
 Eğer projeyi kendi bilgisayarınızda çalıştırmak isterseniz aşağıdaki adımları uygulayabilirsiniz:
 
-```text
+
 1. Projeyi bilgisayarınıza indirin veya klonlayın.
 
 2. Klasörün içinde ".env" adında bir dosya oluşturup içine şunu yazın:
-   `GROQ_API_KEY=sizin_anahtariniz`
+```text
+   GROQ_API_KEY=sizin_anahtariniz
 
 3. Terminalinizi açarak sırasıyla şu komutları çalıştırın:
-   `npm install -g netlify-cli`
-   `netlify dev`
+```text
+   npm install -g netlify-cli
+   netlify dev
