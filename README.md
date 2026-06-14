@@ -36,7 +36,7 @@ Eğer projeyi kendi bilgisayarınızda çalıştırmak isterseniz aşağıdaki a
 ```text
    GROQ_API_KEY=sizin_anahtariniz
 
-3. Terminalinizi açarak sırasıyla şu komutları çalıştırın:
+   3. Terminalinizi açarak sırasıyla şu komutları çalıştırın:
 ```text
    npm install -g netlify-cli
    netlify dev
