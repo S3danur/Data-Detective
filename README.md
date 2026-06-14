@@ -25,13 +25,13 @@ Uygulamayı kullanmak için herhangi bir indirme veya kurulum yapmanıza **gerek
 Yukarıdaki [**Yayın Linki**](https://data-detective-sd.netlify.app/)ne tıklayarak uygulamayı tarayıcınız üzerinden anında kullanabilirsiniz. Gerekli güvenlik altyapısı ve API entegrasyonu sunucu tarafında hazır olarak ayarlanmıştır.
 ### 2. Geliştiriciler İçin (Kodları İncelemek İsteyenler)
 Eğer projeyi kendi bilgisayarınızda çalıştırmak isterseniz aşağıdaki adımları uygulayabilirsiniz:
-**1.** Projeyi bilgisayarınıza indirin veya klonlayın.
-**2.** Klasörün içinde `.env` adında bir dosya oluşturup içine şu kodu yazın:
-
-```text
+1. Projeyi bilgisayarınıza indirin veya klonlayın.
+​2. Klasörün içinde .env adında bir dosya oluşturup içine şu kodu yazın:
+​```text
 GROQ_API_KEY=sizin_anahtariniz
-**3.** Terminalinizi açarak sırasıyla şu komutları çalıştırın:
-
-```bash
+```
+​3. Terminalinizi açarak sırasıyla şu komutları çalıştırın:
+​```bash
 npm install -g netlify-cli
 netlify dev
+
