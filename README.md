@@ -23,11 +23,18 @@ Data Detective, Llama 3.3 70B modelinin üstün akıl yürütme gücünü kullan
 
 Uygulamayı kullanmak için herhangi bir indirme veya kurulum yapmanıza **gerek yoktur.**
 
-1. Doğrudan Kullanım (Önerilen):
-Yukarıdaki "Yayın Linki"ne tıklayarak uygulamayı tarayıcınız üzerinden anında kullanabilirsiniz. Gerekli güvenlik altyapısı ve API entegrasyonu sunucu tarafında hazır olarak ayarlanmıştır. 
+### 1. Doğrudan Kullanım (Önerilen)
+Yukarıdaki **"Yayın Linki"**ne tıklayarak uygulamayı tarayıcınız üzerinden anında kullanabilirsiniz. Gerekli güvenlik altyapısı ve API entegrasyonu sunucu tarafında hazır olarak ayarlanmıştır. 
 
-2. Geliştiriciler İçin (Kodları İncelemek İsteyenler):
-Eğer projeyi kendi bilgisayarınızda çalıştırmak isterseniz:
-- Projeyi indirin.
-- Klasörün içinde .env adında bir dosya oluşturup içine GROQ_API_KEY=sizin_anahtariniz yazın.
-- Terminalde sırasıyla "npm install -g netlify-cli" ve "netlify dev" komutlarını çalıştırın.
+### 2. Geliştiriciler İçin (Kodları İncelemek İsteyenler)
+Eğer projeyi kendi bilgisayarınızda çalıştırmak isterseniz aşağıdaki adımları uygulayabilirsiniz:
+
+```text
+1. Projeyi bilgisayarınıza indirin veya klonlayın.
+
+2. Klasörün içinde ".env" adında bir dosya oluşturup içine şunu yazın:
+   `GROQ_API_KEY=sizin_anahtariniz`
+
+3. Terminalinizi açarak sırasıyla şu komutları çalıştırın:
+   `npm install -g netlify-cli`
+   `netlify dev`
