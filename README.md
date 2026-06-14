@@ -33,7 +33,7 @@ Eğer projeyi kendi bilgisayarınızda çalıştırmak isterseniz aşağıdaki a
 1. Projeyi bilgisayarınıza indirin veya klonlayın.
 
 2. Klasörün içinde ".env" adında bir dosya oluşturup içine şunu yazın:
-```bash
+```text
    GROQ_API_KEY=sizin_anahtariniz
 **Adım 3:** Terminalinizi açarak sırasıyla şu komutları çalıştırın:
 
